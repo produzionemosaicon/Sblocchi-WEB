@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+
+import { useState } from 'react'
 import { collection, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { db, storage } from '../firebase/config'
+import { db } from '../firebase/config'
 import { useAuth } from '../context/AuthContext'
 
 const COMPONENTI = ['forma', 'sottopiede', 'tacco', 'suola', 'fussbet', 'scasso']
@@ -38,7 +38,7 @@ export default function ArticoloModal({ articolo, onClose }) {
   const { user } = useAuth()
   const isEdit = !!articolo?.id
   const [form, setForm] = useState(isEdit ? { ...defaultArticolo, ...articolo } : defaultArticolo)
-  const [fotoFile, setFotoFile] = useState(null)
+  const [fotoBase64, setFotoBase64] = useState(null)
   const [fotoPreview, setFotoPreview] = useState(articolo?.fotoUrl || '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -60,8 +60,25 @@ export default function ArticoloModal({ articolo, onClose }) {
   function handleFoto(e) {
     const file = e.target.files[0]
     if (!file) return
-    setFotoFile(file)
-    setFotoPreview(URL.createObjectURL(file))
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const MAX = 600
+        let w = img.width, h = img.height
+        if (w > h && w > MAX) { h = Math.round((h * MAX) / w); w = MAX }
+        else if (h > MAX) { w = Math.round((w * MAX) / h); h = MAX }
+        canvas.width = w
+        canvas.height = h
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+        const base64 = canvas.toDataURL('image/jpeg', 0.75)
+        setFotoBase64(base64)
+        setFotoPreview(base64)
+      }
+      img.src = ev.target.result
+    }
+    reader.readAsDataURL(file)
   }
 
   async function handleSave() {
@@ -72,20 +89,13 @@ export default function ArticoloModal({ articolo, onClose }) {
     setSaving(true)
     setError('')
     try {
-      let fotoUrl = form.fotoUrl || ''
-      if (fotoFile) {
-        const storageRef = ref(storage, `foto/${Date.now()}_${fotoFile.name}`)
-        await uploadBytes(storageRef, fotoFile)
-        fotoUrl = await getDownloadURL(storageRef)
-      }
-
+      const fotoUrl = fotoBase64 || form.fotoUrl || ''
       const data = {
         ...form,
         fotoUrl,
         updatedAt: serverTimestamp(),
         updatedBy: user?.email,
       }
-
       if (isEdit) {
         await updateDoc(doc(db, 'articoli', articolo.id), data)
       } else {
@@ -98,7 +108,7 @@ export default function ArticoloModal({ articolo, onClose }) {
       }
       onClose()
     } catch (err) {
-      setError('Errore durante il salvataggio')
+      setError('Errore durante il salvataggio: ' + err.message)
       console.error(err)
     } finally {
       setSaving(false)
@@ -112,9 +122,7 @@ export default function ArticoloModal({ articolo, onClose }) {
           <div style={styles.title}>{isEdit ? 'Modifica articolo' : 'Nuovo articolo'}</div>
           <button onClick={onClose} style={styles.closeBtn}>✕</button>
         </div>
-
         <div style={styles.body}>
-          {/* Sezione info base */}
           <div style={styles.section}>
             <div style={styles.sectionTitle}>Informazioni base</div>
             <div style={styles.grid2}>
@@ -126,27 +134,17 @@ export default function ArticoloModal({ articolo, onClose }) {
               <Field label="Paia" value={form.paia} onChange={v => setField('paia', v)} type="number" />
             </div>
           </div>
-
-          {/* Stato generale */}
           <div style={styles.section}>
             <div style={styles.sectionTitle}>Stato generale</div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {STATI_GENERALI.map(s => (
-                <button
-                  key={s}
-                  onClick={() => setField('statoGenerale', s)}
-                  style={{
-                    ...styles.statoBadge,
-                    ...(form.statoGenerale === s ? styles.statoBadgeActive : {})
-                  }}
-                >
+                <button key={s} onClick={() => setField('statoGenerale', s)}
+                  style={{ ...styles.statoBadge, ...(form.statoGenerale === s ? styles.statoBadgeActive : {}) }}>
                   {s}
                 </button>
               ))}
             </div>
           </div>
-
-          {/* Prove */}
           <div style={styles.section}>
             <div style={styles.sectionTitle}>Prove</div>
             <div style={styles.grid3}>
@@ -155,33 +153,23 @@ export default function ArticoloModal({ articolo, onClose }) {
               <Field label="Prova struttura" value={form.provaStruttura} onChange={v => setField('provaStruttura', v)} />
             </div>
           </div>
-
-          {/* Componenti */}
           <div style={styles.section}>
             <div style={styles.sectionTitle}>Componenti</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {COMPONENTI.map(comp => (
                 <div key={comp} style={styles.compRow}>
                   <div style={styles.compName}>{comp.charAt(0).toUpperCase() + comp.slice(1)}</div>
-                  <select
-                    value={form.componenti[comp]?.stato || '—'}
-                    onChange={e => setComponente(comp, 'stato', e.target.value)}
-                    style={styles.select}
-                  >
+                  <select value={form.componenti[comp]?.stato || '—'}
+                    onChange={e => setComponente(comp, 'stato', e.target.value)} style={styles.select}>
                     {STATI_COMPONENTE.map(s => <option key={s}>{s}</option>)}
                   </select>
-                  <input
-                    placeholder="Fornitore"
-                    value={form.componenti[comp]?.fornitore || ''}
+                  <input placeholder="Fornitore" value={form.componenti[comp]?.fornitore || ''}
                     onChange={e => setComponente(comp, 'fornitore', e.target.value)}
-                    style={{ ...styles.input, flex: 1 }}
-                  />
+                    style={{ ...styles.input, flex: 1 }} />
                 </div>
               ))}
             </div>
           </div>
-
-          {/* Date e conformità */}
           <div style={styles.section}>
             <div style={styles.sectionTitle}>Date e conformità</div>
             <div style={styles.grid2}>
@@ -190,31 +178,19 @@ export default function ArticoloModal({ articolo, onClose }) {
               <Field label="Consegna" value={form.consegna} onChange={v => setField('consegna', v)} />
             </div>
           </div>
-
-          {/* Note */}
           <div style={styles.section}>
             <div style={styles.sectionTitle}>Note</div>
-            <textarea
-              value={form.note}
-              onChange={e => setField('note', e.target.value)}
-              style={styles.textarea}
-              rows={3}
-              placeholder="Note aggiuntive..."
-            />
+            <textarea value={form.note} onChange={e => setField('note', e.target.value)}
+              style={styles.textarea} rows={3} placeholder="Note aggiuntive..." />
           </div>
-
-          {/* Foto */}
           <div style={styles.section}>
             <div style={styles.sectionTitle}>Foto articolo</div>
-            {fotoPreview && (
-              <img src={fotoPreview} alt="preview" style={styles.fotoPreview} />
-            )}
+            {fotoPreview && <img src={fotoPreview} alt="preview" style={styles.fotoPreview} />}
             <input type="file" accept="image/*" onChange={handleFoto} style={{ fontSize: 12 }} />
+            <div style={{ fontSize: 10, color: '#aaa', marginTop: 4 }}>La foto viene ridimensionata automaticamente</div>
           </div>
-
           {error && <div style={styles.error}>{error}</div>}
         </div>
-
         <div style={styles.footer}>
           <button onClick={onClose} style={styles.btnCancel}>Annulla</button>
           <button onClick={handleSave} style={styles.btnSave} disabled={saving}>
@@ -229,49 +205,21 @@ export default function ArticoloModal({ articolo, onClose }) {
 function Field({ label, value, onChange, type = 'text' }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <label style={{ fontSize: 10, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-        {label}
-      </label>
-      <input
-        type={type}
-        value={value || ''}
-        onChange={e => onChange(e.target.value)}
-        style={{ padding: '6px 8px', border: '1px solid #D8D8D8', borderRadius: 6, fontSize: 12, color: '#111', outline: 'none' }}
-      />
+      <label style={{ fontSize: 10, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</label>
+      <input type={type} value={value || ''} onChange={e => onChange(e.target.value)}
+        style={{ padding: '6px 8px', border: '1px solid #D8D8D8', borderRadius: 6, fontSize: 12, color: '#111', outline: 'none' }} />
     </div>
   )
 }
 
 const styles = {
-  overlay: {
-    position: 'fixed', inset: 0,
-    background: 'rgba(0,0,0,0.3)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    zIndex: 1000,
-  },
-  modal: {
-    background: '#fff',
-    borderRadius: 12,
-    width: 680,
-    maxWidth: '95vw',
-    maxHeight: '90vh',
-    display: 'flex',
-    flexDirection: 'column',
-    boxShadow: '0 8px 40px rgba(0,0,0,0.15)',
-  },
-  header: {
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '16px 20px',
-    borderBottom: '1px solid #EBEBEB',
-  },
+  overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
+  modal: { background: '#fff', borderRadius: 12, width: 680, maxWidth: '95vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 40px rgba(0,0,0,0.15)' },
+  header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #EBEBEB' },
   title: { fontSize: 14, fontWeight: 600, color: '#111' },
   closeBtn: { background: 'none', border: 'none', fontSize: 16, color: '#999', cursor: 'pointer' },
   body: { flex: 1, overflowY: 'auto', padding: '20px' },
-  footer: {
-    display: 'flex', justifyContent: 'flex-end', gap: 8,
-    padding: '14px 20px',
-    borderTop: '1px solid #EBEBEB',
-  },
+  footer: { display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '14px 20px', borderTop: '1px solid #EBEBEB' },
   section: { marginBottom: 24 },
   sectionTitle: { fontSize: 11, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 },
   grid2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 },
@@ -283,7 +231,7 @@ const styles = {
   textarea: { width: '100%', padding: '8px', border: '1px solid #D8D8D8', borderRadius: 6, fontSize: 12, color: '#111', outline: 'none', resize: 'vertical' },
   statoBadge: { padding: '5px 12px', borderRadius: 20, border: '1px solid #E0E0E0', background: '#F5F5F5', color: '#555', cursor: 'pointer', fontSize: 12 },
   statoBadgeActive: { background: '#111', color: '#fff', borderColor: '#111' },
-  fotoPreview: { width: 120, height: 90, objectFit: 'cover', borderRadius: 8, border: '1px solid #EBEBEB', marginBottom: 8 },
+  fotoPreview: { width: 120, height: 90, objectFit: 'cover', borderRadius: 8, border: '1px solid #EBEBEB', marginBottom: 8, display: 'block' },
   error: { background: '#FEECEC', color: '#B03030', padding: '8px 10px', borderRadius: 6, fontSize: 12, marginTop: 8 },
   btnCancel: { padding: '8px 16px', fontSize: 12, borderRadius: 7, border: '1px solid #E0E0E0', background: '#fff', color: '#555', cursor: 'pointer' },
   btnSave: { padding: '8px 20px', fontSize: 12, fontWeight: 600, borderRadius: 7, border: 'none', background: '#111', color: '#fff', cursor: 'pointer' },
