@@ -11,31 +11,31 @@ export default function Dashboard() {
   const [tab, setTab] = useState('tabella')
 
   const tabs = [
-    { id: 'tabella',  label: 'Tabella',           icon: '▦' },
-    { id: 'storico',  label: 'Storico sbloccati',  icon: '✓' },
-    { id: 'analisi',  label: 'Analisi',            icon: '◎' },
+    { id: 'tabella', label: 'Tabella' },
+    { id: 'storico', label: 'Storico sbloccati' },
+    { id: 'analisi', label: 'Analisi' },
   ]
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: '#F7F8FA' }}>
-
-      {/* Topbar */}
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
       <div style={styles.topbar}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
           <div style={styles.brand}>
-            <div style={styles.brandDot} />
-            <span style={styles.brandName}>Sblocchi Produzione</span>
-            <span style={styles.brandSub}>Mosaicon</span>
+            <div style={styles.brandIcon}>SP</div>
+            <div>
+              <div style={styles.brandName}>Sblocchi Produzione</div>
+              <div style={styles.brandSub}>Mosaicon Group</div>
+            </div>
           </div>
-          <nav style={styles.nav}>
+          <div style={styles.nav}>
             {tabs.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
                 style={{ ...styles.navBtn, ...(tab === t.id ? styles.navBtnActive : {}) }}>
-                <span style={{ fontSize: 11, opacity: 0.7 }}>{t.icon}</span>
                 {t.label}
+                {tab === t.id && <div style={styles.navIndicator} />}
               </button>
             ))}
-          </nav>
+          </div>
         </div>
         <div style={styles.userArea}>
           <div style={styles.avatar}>{user?.email?.[0]?.toUpperCase()}</div>
@@ -44,7 +44,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Contenuto */}
       <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {tab === 'tabella' && <Tabella />}
         {tab === 'storico' && <StoricoSbloccati />}
@@ -60,84 +59,52 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: '0 24px',
-    height: 52,
+    height: 56,
     background: '#fff',
-    borderBottom: '1px solid #EBEBEB',
+    borderBottom: '1px solid #F1F5F9',
     flexShrink: 0,
-    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
   },
-  brand: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
+  brand: { display: 'flex', alignItems: 'center', gap: 10 },
+  brandIcon: {
+    width: 32, height: 32, borderRadius: 8,
+    background: 'linear-gradient(135deg, #6366F1, #8B5CF6)',
+    color: '#fff', fontSize: 11, fontWeight: 800,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    letterSpacing: '0.05em',
   },
-  brandDot: {
-    width: 8,
-    height: 8,
-    borderRadius: '50%',
-    background: '#111',
-  },
-  brandName: {
-    fontSize: 14,
-    fontWeight: 700,
-    color: '#111',
-    letterSpacing: '-0.01em',
-  },
-  brandSub: {
-    fontSize: 12,
-    color: '#bbb',
-    fontWeight: 400,
-  },
-  nav: {
-    display: 'flex',
-    gap: 2,
-  },
+  brandName: { fontSize: 13, fontWeight: 700, color: '#1E293B', lineHeight: 1.2 },
+  brandSub:  { fontSize: 10, color: '#94A3B8' },
+  nav: { display: 'flex', gap: 0 },
   navBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 5,
-    padding: '6px 12px',
-    fontSize: 12,
+    position: 'relative',
+    padding: '0 16px',
+    height: 56,
+    fontSize: 13,
     fontWeight: 500,
-    borderRadius: 7,
     border: 'none',
     background: 'transparent',
-    color: '#888',
+    color: '#94A3B8',
     cursor: 'pointer',
-    transition: 'all .15s',
   },
-  navBtnActive: {
-    background: '#F0F0F2',
-    color: '#111',
+  navBtnActive: { color: '#6366F1', fontWeight: 700 },
+  navIndicator: {
+    position: 'absolute',
+    bottom: 0, left: 16, right: 16,
+    height: 2,
+    background: '#6366F1',
+    borderRadius: 2,
   },
-  userArea: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 10,
-  },
+  userArea: { display: 'flex', alignItems: 'center', gap: 10 },
   avatar: {
-    width: 28,
-    height: 28,
-    borderRadius: '50%',
-    background: '#111',
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 700,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 30, height: 30, borderRadius: '50%',
+    background: 'linear-gradient(135deg, #6366F1, #8B5CF6)',
+    color: '#fff', fontSize: 12, fontWeight: 700,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
-  userEmail: {
-    fontSize: 11,
-    color: '#999',
-  },
+  userEmail: { fontSize: 11, color: '#94A3B8' },
   btnLogout: {
-    padding: '5px 12px',
-    fontSize: 11,
-    borderRadius: 6,
-    border: '1px solid #E8E8E8',
-    background: '#fff',
-    color: '#666',
-    cursor: 'pointer',
+    padding: '5px 12px', fontSize: 11, borderRadius: 6,
+    border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', cursor: 'pointer',
   },
 }
