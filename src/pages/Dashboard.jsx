@@ -10,33 +10,36 @@ export default function Dashboard() {
   const { user } = useAuth()
   const [tab, setTab] = useState('tabella')
 
+  const tabs = [
+    { id: 'tabella',  label: 'Tabella',           icon: '▦' },
+    { id: 'storico',  label: 'Storico sbloccati',  icon: '✓' },
+    { id: 'analisi',  label: 'Analisi',            icon: '◎' },
+  ]
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: '#F7F8FA' }}>
+
       {/* Topbar */}
       <div style={styles.topbar}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-          <div style={styles.logo}>
-            Sblocchi Produzione
-            <span style={styles.logoSub}>Mosaicon</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+          <div style={styles.brand}>
+            <div style={styles.brandDot} />
+            <span style={styles.brandName}>Sblocchi Produzione</span>
+            <span style={styles.brandSub}>Mosaicon</span>
           </div>
-          <div style={styles.tabs}>
-            {[
-              { id: 'tabella', label: 'Tabella' },
-              { id: 'storico', label: 'Storico sbloccati' },
-              { id: 'analisi', label: 'Analisi' },
-            ].map(t => (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                style={{ ...styles.tab, ...(tab === t.id ? styles.tabActive : {}) }}
-              >
+          <nav style={styles.nav}>
+            {tabs.map(t => (
+              <button key={t.id} onClick={() => setTab(t.id)}
+                style={{ ...styles.navBtn, ...(tab === t.id ? styles.navBtnActive : {}) }}>
+                <span style={{ fontSize: 11, opacity: 0.7 }}>{t.icon}</span>
                 {t.label}
               </button>
             ))}
-          </div>
+          </nav>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 11, color: '#999' }}>{user?.email}</span>
+        <div style={styles.userArea}>
+          <div style={styles.avatar}>{user?.email?.[0]?.toUpperCase()}</div>
+          <span style={styles.userEmail}>{user?.email}</span>
           <button onClick={() => signOut(auth)} style={styles.btnLogout}>Esci</button>
         </div>
       </div>
@@ -56,54 +59,85 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '12px 24px',
-    borderBottom: '1px solid #EBEBEB',
+    padding: '0 24px',
+    height: 52,
     background: '#fff',
+    borderBottom: '1px solid #EBEBEB',
     flexShrink: 0,
+    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
   },
-  logo: {
-    fontSize: 14,
-    fontWeight: 600,
-    color: '#111',
+  brand: {
     display: 'flex',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
-  logoSub: {
+  brandDot: {
+    width: 8,
+    height: 8,
+    borderRadius: '50%',
+    background: '#111',
+  },
+  brandName: {
+    fontSize: 14,
+    fontWeight: 700,
+    color: '#111',
+    letterSpacing: '-0.01em',
+  },
+  brandSub: {
     fontSize: 12,
+    color: '#bbb',
     fontWeight: 400,
-    color: '#999',
   },
-  tabs: {
+  nav: {
     display: 'flex',
     gap: 2,
-    background: '#F5F5F5',
-    borderRadius: 8,
-    padding: 3,
   },
-  tab: {
-    padding: '5px 14px',
+  navBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 5,
+    padding: '6px 12px',
     fontSize: 12,
-    borderRadius: 6,
+    fontWeight: 500,
+    borderRadius: 7,
     border: 'none',
     background: 'transparent',
-    color: '#777',
+    color: '#888',
     cursor: 'pointer',
-    fontWeight: 400,
+    transition: 'all .15s',
   },
-  tabActive: {
-    background: '#fff',
+  navBtnActive: {
+    background: '#F0F0F2',
     color: '#111',
-    fontWeight: 600,
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+  },
+  userArea: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+  },
+  avatar: {
+    width: 28,
+    height: 28,
+    borderRadius: '50%',
+    background: '#111',
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 700,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  userEmail: {
+    fontSize: 11,
+    color: '#999',
   },
   btnLogout: {
     padding: '5px 12px',
     fontSize: 11,
     borderRadius: 6,
-    border: '1px solid #E0E0E0',
+    border: '1px solid #E8E8E8',
     background: '#fff',
-    color: '#555',
+    color: '#666',
     cursor: 'pointer',
   },
 }
